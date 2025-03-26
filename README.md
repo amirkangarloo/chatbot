@@ -11,14 +11,11 @@ $ pnpm install
 ## Running the app
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
+# development mode
+$ pnpm run dev
 
 # production mode
-$ pnpm run start:prod
+$ pnpm run prod
 ```
 
 ## Test
@@ -36,4 +33,4 @@ $ pnpm run test:cov
 
 ## License
 
-Nest is [MIT licensed](LICENSE).
+This project has [MIT licensed](LICENSE).
