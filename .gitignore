@@ -3,7 +3,7 @@
 /node_modules
 /build
 # database
-/sql-lite
+/sqlite
 
 # Logs
 logs
