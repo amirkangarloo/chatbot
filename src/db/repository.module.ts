@@ -1,14 +1,14 @@
-import { Module, Provider } from '@nestjs/common';
+import { Global, Module, Provider } from '@nestjs/common';
 // Repositories
 import * as repository from "./repository";
 // Connector DB
-import { ConnectorDbModule } from 'src/db/connector/connector-db.module';
+import { ConnectorDbService } from 'src/db/connector/connector-db.service';
 
 const repositories: Provider[] = Object.values(repository);
 
+@Global()
 @Module({
-  imports: [ConnectorDbModule],
-  providers: repositories,
+  providers: [ConnectorDbService, ...repositories],
   exports: repositories,
 })
 export class RepositoryModule { }
