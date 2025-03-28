@@ -1,17 +1,15 @@
 import { Module } from '@nestjs/common';
-import { UserModule } from './domain/user/user.module';
-import { ConversationModule } from './domain/conversation/conversation.module';
-import { RepositoryModule } from './repository/repository.module';
 import { ConfigModule } from '@nestjs/config';
+import { DbModule } from 'src/db/db.module';
+import { DomainModule } from 'src/domain/domain.module';
 
 @Module({
   imports: [
+    DbModule,
+    DomainModule,
     ConfigModule.forRoot({ isGlobal: true }),
-    UserModule,
-    ConversationModule,
-    RepositoryModule,
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }
