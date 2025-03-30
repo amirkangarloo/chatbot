@@ -7,6 +7,8 @@ export class UserRepositoryService {
     constructor(private readonly db: ConnectorDbService) { }
 
     async create(data: Prisma.UserCreateInput) {
-        return this.db.user.create({ data });
+        await this.db.user.create({ data });
+
+        return "success";
     }
 }
