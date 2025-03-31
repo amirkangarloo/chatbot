@@ -1,10 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
+import { buildSwaggerDocument } from 'src/utility';
+import { applicationConstants } from 'src/constant';
 
 async function bootstrap() {
-  const port = parseInt(process.env.APP_PORT, 10) || 3000;
+  const port = applicationConstants.PORT;
   const app = await NestFactory.create(AppModule);
+  buildSwaggerDocument(app);
 
   await app.listen(port);
 
