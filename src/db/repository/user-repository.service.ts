@@ -11,4 +11,8 @@ export class UserRepositoryService {
 
         return "success";
     }
+
+    async findUniqueOne(where: Prisma.UserWhereUniqueInput) {
+        return this.db.user.findUnique({ where });
+    }
 }
