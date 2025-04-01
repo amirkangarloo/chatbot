@@ -11,27 +11,43 @@ import {
 import { Request, Response } from 'express';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { v4 as uuid } from 'uuid';
 
-export type RequestHandler = (request: Request, logger: Logger) => void;
-export type ResponseHandler = (request: Request, response: Response, body: unknown, logger: Logger) => void;
-export type ErrorHandler = (request: Request, error: Error, logger: Logger) => void;
+type RequestHandlerPayload = { request: Request, logger: Logger, correlationId: string };
+type ResponseHandlerPayload = { response: Response, responseBody: unknown } & RequestHandlerPayload;
+type ErrorHandlerPayload = { error: Error } & RequestHandlerPayload;
 
-export const defaultRequestHandler: RequestHandler = (request: Request, logger: Logger) => {
-    const message = `REQUEST: ${request.method} | ${request.url} | ${request.ip} | ${request.headers['user-agent']} | ${JSON.stringify(request.body)} | ${JSON.stringify(request.query)}`;
+type RequestHandler = (payload: RequestHandlerPayload) => void;
+type ResponseHandler = (payload: ResponseHandlerPayload) => void;
+type ErrorHandler = (payload: ErrorHandlerPayload) => void;
+
+type LoggingInterceptorConfig = {
+    requestHandler: RequestHandler;
+    responseHandler: ResponseHandler;
+    errorHandler: ErrorHandler;
+    context: string;
+};
+
+const httpRequestHandler: RequestHandler = (payload: RequestHandlerPayload) => {
+    const { correlationId, logger, request } = payload;
+    const { method, url, headers, body, query, ip } = request;
+
+    const message = `REQUEST - correlationId: ${correlationId} | method: ${method} | url: ${url} | ip: ${ip} | user-agent: ${headers['user-agent']} | body: ${JSON.stringify(body)} | query: ${JSON.stringify(query)}`;
+
     logger.log(message);
 };
 
-export const defaultResponseHandler: ResponseHandler = (
-    request: Request,
-    response: Response,
-    _body: unknown,
-    logger: Logger
-) => {
-    const message = `RESPONSE: ${request.method} ${request.url} => ${response.statusCode}`;
+const httpResponseHandler: ResponseHandler = (payload: ResponseHandlerPayload) => {
+    const { correlationId, logger, request, response, responseBody } = payload;
+    const { method, url } = request;
+    const { statusCode } = response;
+
+    const message = `RESPONSE: correlationId: ${correlationId} | statusCode: ${statusCode} | method: ${method} | url: ${url} | body: ${JSON.stringify(responseBody)}`;
+
     logger.log(message);
 };
 
-export const defaultErrorHandler: ErrorHandler = (request: Request, error: Error, logger: Logger) => {
+const httpErrorHandler: ErrorHandler = (request: Request, error: Error, logger: Logger) => {
     if (error instanceof HttpException) {
         const statusCode: number = error.getStatus();
         const message = `ERROR: ${request.method} ${request.url} => ${statusCode}`;
@@ -60,86 +76,49 @@ export const defaultErrorHandler: ErrorHandler = (request: Request, error: Error
     }
 };
 
-export type LoggingInterceptorConfig = {
-    requestHandler: RequestHandler | null;
-    responseHandler: ResponseHandler | null;
-    errorHandler: ErrorHandler | null;
-    context: string;
-};
-
-/**
- * Interceptor that logs input/output requests
- */
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
     private readonly logger: Logger;
-
     private readonly config: LoggingInterceptorConfig;
 
-    constructor(@Optional() config?: Partial<LoggingInterceptorConfig> | string) {
-        const partialConfig: Partial<LoggingInterceptorConfig> =
-            typeof config === 'string' ? { context: config } : { ...config };
-
+    constructor() {
         this.config = {
-            ...partialConfig,
-            requestHandler:
-                partialConfig.requestHandler !== undefined ? partialConfig.requestHandler : defaultRequestHandler,
-            responseHandler:
-                partialConfig.responseHandler !== undefined ? partialConfig.responseHandler : defaultResponseHandler,
-            errorHandler: partialConfig.errorHandler !== undefined ? partialConfig.errorHandler : defaultErrorHandler,
-            context: partialConfig.context || "HTTP",
+            requestHandler: httpRequestHandler,
+            responseHandler: httpResponseHandler,
+            errorHandler: httpErrorHandler,
+            context: "HTTP",
         };
 
         this.logger = new Logger(this.config.context);
     }
 
-    /**
-     * Intercept method, logs before and after the request being processed
-     * @param context details about the current request
-     * @param callHandler implements the handle method that returns an Observable
-     */
     public intercept(context: ExecutionContext, callHandler: CallHandler): Observable<unknown> {
-        if (this.config.requestHandler != null) {
-            const request = context.switchToHttp().getRequest();
-            this.config.requestHandler(request, this.logger);
-        }
+        const correlationId = uuid();
+        const request = context.switchToHttp().getRequest();
+        this.config.requestHandler({ request, logger: this.logger, correlationId });
 
         return callHandler.handle().pipe(
             tap({
-                next: (val: unknown): void => {
-                    this.logNext(val, context);
+                next: (value: unknown): void => {
+                    this.logNext(value, context, correlationId);
                 },
                 error: (err: Error): void => {
-                    this.logError(err, context);
+                    this.logError(err, context, correlationId);
                 },
             })
         );
     }
 
-    /**
-     * Logs the request response in success cases
-     * @param body body returned
-     * @param context details about the current request
-     */
-    private logNext(body: unknown, context: ExecutionContext): void {
-        if (this.config.responseHandler != null) {
-            const request = context.switchToHttp().getRequest<Request>();
-            const response = context.switchToHttp().getResponse<Response>();
+    private logNext(responseBody: unknown, context: ExecutionContext, correlationId: string): void {
+        const request = context.switchToHttp().getRequest<Request>();
+        const response = context.switchToHttp().getResponse<Response>();
 
-            this.config.responseHandler(request, response, body, this.logger);
-        }
+        this.config.responseHandler({ request, response, logger: this.logger, correlationId, responseBody });
     }
 
-    /**
-     * Logs the request response in success cases
-     * @param error Error object
-     * @param context details about the current request
-     */
-    private logError(error: Error, context: ExecutionContext): void {
+    private logError(error: Error, context: ExecutionContext, correlationId: string): void {
         const request = context.switchToHttp().getRequest<Request>();
 
-        if (this.config.errorHandler != null) {
-            this.config.errorHandler(request, error, this.logger);
-        }
+        this.config.errorHandler({ request, error, logger: this.logger, correlationId });
     }
 }
