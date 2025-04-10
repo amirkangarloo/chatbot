@@ -47,33 +47,15 @@ const httpResponseHandler: ResponseHandler = (payload: ResponseHandlerPayload) =
     logger.log(message);
 };
 
-const httpErrorHandler: ErrorHandler = (request: Request, error: Error, logger: Logger) => {
-    if (error instanceof HttpException) {
-        const statusCode: number = error.getStatus();
-        const message = `ERROR: ${request.method} ${request.url} => ${statusCode}`;
+const httpErrorHandler: ErrorHandler = (payload: ErrorHandlerPayload) => {
+    const { correlationId, logger, request, error } = payload;
+    const { method, url } = request;
+    const { message, name, stack } = error;
+    const statusCode = error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
-        if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
-            logger.error(
-                {
-                    message,
-                    error,
-                },
-                error.stack
-            );
-        } else {
-            logger.warn({
-                message,
-                error,
-            });
-        }
-    } else {
-        logger.error(
-            {
-                message: `ERROR: ${request.method} ${request.url}`,
-            },
-            error.stack
-        );
-    }
+    const errorMessage = `ERROR: correlationId: ${correlationId} | method: ${method} | url: ${url} statusCode: ${statusCode} | name: ${name} | message: ${message} | stack: ${JSON.stringify(stack)}`;
+
+    logger.error(errorMessage);
 };
 
 @Injectable()
