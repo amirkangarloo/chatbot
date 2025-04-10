@@ -3,7 +3,7 @@ import { UserService } from './user.service';
 import { RegisterRequestDto } from 'src/domain/user/dto';
 import { Public } from 'src/decorator';
 
-@Controller('user')
+@Controller({ path: 'user', version: '1' })
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
