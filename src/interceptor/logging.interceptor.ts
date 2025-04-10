@@ -31,8 +31,9 @@ type LoggingInterceptorConfig = {
 const httpRequestHandler: RequestHandler = (payload: RequestHandlerPayload) => {
     const { correlationId, logger, request } = payload;
     const { method, url, headers, body, query, ip } = request;
+    const filteredBody = body?.password ? { ...body, password: '******' } : body;
 
-    const message = `REQUEST - correlationId: ${correlationId} | method: ${method} | url: ${url} | ip: ${ip} | user-agent: ${headers['user-agent']} | body: ${JSON.stringify(body)} | query: ${JSON.stringify(query)}`;
+    const message = `REQUEST - correlationId: ${correlationId} | method: ${method} | url: ${url} | ip: ${ip} | user-agent: ${headers['user-agent']} | body: ${JSON.stringify(filteredBody)} | query: ${JSON.stringify(query)}`;
 
     logger.log(message);
 };
