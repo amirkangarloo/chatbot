@@ -5,7 +5,7 @@ import { buildSwaggerDocument } from 'src/utility';
 import { applicationConstants } from 'src/constant';
 
 async function bootstrap() {
-  const port = applicationConstants.PORT;
+  const port = parseInt(process.env.APP_PORT, 10) || applicationConstants.DEFAULT_PORT;
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.setGlobalPrefix(applicationConstants.GLOBAL_API_PREFIX);

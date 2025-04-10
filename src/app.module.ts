@@ -15,8 +15,8 @@ import { LoggingInterceptor } from 'src/interceptor';
     ConfigModule.forRoot({ isGlobal: true }),
     JwtModule.register({
       global: true,
-      secret: jwtConstants.secret,
-      signOptions: { expiresIn: jwtConstants.expiresIn },
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || jwtConstants.defaultExpiresIn },
     }),
   ],
   providers: [{
