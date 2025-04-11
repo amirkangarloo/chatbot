@@ -1,4 +1,4 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Patch, Post } from '@nestjs/common';
 import { ConversationService } from './conversation.service';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
@@ -6,4 +6,22 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 @ApiBearerAuth()
 export class ConversationController {
   constructor(private readonly conversationService: ConversationService) { }
+
+  @Get()
+  async findAll() { }
+
+  @Get(':conversationId')
+  async findOne() { }
+
+  @Post()
+  async create() { }
+
+  @Post(':conversationId/message')
+  async sendMessage() { }
+
+  @Patch(':conversationId')
+  async update() { }
+
+  @Delete(':conversationId')
+  async remove() { }
 }
