@@ -7,6 +7,8 @@ export function buildSwaggerDocument(app: INestApplication) {
         .setTitle(swaggerConstants.title)
         .setDescription(swaggerConstants.description)
         .setVersion(swaggerConstants.version)
+        .addBearerAuth()
+        .setLicense(swaggerConstants.license, swaggerConstants.licenseUrl)
         .build();
 
     const documentFactory = () => SwaggerModule.createDocument(app, config);
